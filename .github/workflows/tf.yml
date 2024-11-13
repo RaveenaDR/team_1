@@ -27,11 +27,18 @@ jobs:
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Set in GitHub Secrets
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Set in GitHub Secrets
-          aws_region: us-east-1  # Specify the AWS region
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Set in GitHub Secrets
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Set in GitHub Secrets
+          aws-region: us-east-1  # Specify the AWS region
 
-
+      # Step 4: Cache Terraform providers (optional, speeds up terraform init)
+      - name: Cache Terraform providers
+        uses: actions/cache@v2
+        with:
+          path: ~/.terraform.d/plugin-cache
+          key: terraform-${{ runner.os }}-${{ hashFiles('**/*.tf') }}
+          restore-keys: |
+            terraform-${{ runner.os }}-
 
       # Step 5: Initialize Terraform
       - name: Terraform Init
@@ -45,4 +52,9 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve plan.tfplan
         if: github.ref == 'refs/heads/main'
+
+      # Step 8: Clean up (Optional)
+      - name: Clean up
+        run: terraform destroy -auto-approve
+        if: github.event_name == 'pull_request'
 
